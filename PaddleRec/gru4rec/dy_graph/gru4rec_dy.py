@@ -23,7 +23,6 @@ import six
 import reader
 import model_check
 import time
-
 from args import *
 
 import sys
@@ -55,44 +54,39 @@ class SimpleGRURNN(paddle.fluid.Layer):
 
         for i in range(self._num_layers):
             weight_1 = self.create_parameter(
-                attr=paddle.ParamAttr(
-                    initializer=paddle.nn.initializer.Uniform(
-                        low=-self._init_scale, high=self._init_scale)),
+                attr=paddle.ParamAttr(initializer=paddle.nn.initializer.Uniform(
+                    low=-self._init_scale, high=self._init_scale)),
                 shape=[self._hidden_size * 2, self._hidden_size * 2],
                 dtype="float32",
                 default_initializer=paddle.nn.initializer.Uniform(
                     low=-self._init_scale, high=self._init_scale))
             self.weight_1_arr.append(self.add_parameter('w1_%d' % i, weight_1))
             weight_2 = self.create_parameter(
-                attr=paddle.ParamAttr(
-                    initializer=paddle.nn.initializer.Uniform(
-                        low=-self._init_scale, high=self._init_scale)),
+                attr=paddle.ParamAttr(initializer=paddle.nn.initializer.Uniform(
+                    low=-self._init_scale, high=self._init_scale)),
                 shape=[self._hidden_size, self._hidden_size],
                 dtype="float32",
                 default_initializer=paddle.nn.initializer.Uniform(
                     low=-self._init_scale, high=self._init_scale))
             self.weight_2_arr.append(self.add_parameter('w2_%d' % i, weight_2))
             weight_3 = self.create_parameter(
-                attr=paddle.ParamAttr(
-                    initializer=paddle.nn.initializer.Uniform(
-                        low=-self._init_scale, high=self._init_scale)),
+                attr=paddle.ParamAttr(initializer=paddle.nn.initializer.Uniform(
+                    low=-self._init_scale, high=self._init_scale)),
                 shape=[self._hidden_size, self._hidden_size],
                 dtype="float32",
                 default_initializer=paddle.nn.initializer.Uniform(
                     low=-self._init_scale, high=self._init_scale))
             self.weight_3_arr.append(self.add_parameter('w3_%d' % i, weight_3))
             bias_1 = self.create_parameter(
-                attr=paddle.ParamAttr(
-                    initializer=paddle.nn.initializer.Uniform(
-                        low=-self._init_scale, high=self._init_scale)),
+                attr=paddle.ParamAttr(initializer=paddle.nn.initializer.Uniform(
+                    low=-self._init_scale, high=self._init_scale)),
                 shape=[self._hidden_size * 2],
                 dtype="float32",
                 default_initializer=paddle.nn.initializer.Constant(0.0))
             self.bias_1_arr.append(self.add_parameter('b1_%d' % i, bias_1))
             bias_2 = self.create_parameter(
-                attr=paddle.ParamAttr(
-                    initializer=paddle.nn.initializer.Uniform(
-                        low=-self._init_scale, high=self._init_scale)),
+                attr=paddle.ParamAttr(initializer=paddle.nn.initializer.Uniform(
+                    low=-self._init_scale, high=self._init_scale)),
                 shape=[self._hidden_size * 1],
                 dtype="float32",
                 default_initializer=paddle.nn.initializer.Constant(0.0))
@@ -120,12 +114,11 @@ class SimpleGRURNN(paddle.fluid.Layer):
                 gate_input = paddle.add(x=gate_input, y=bias_1)
                 u, r = paddle.split(x=gate_input, num_or_sections=2, axis=-1)
                 hidden_c = paddle.tanh(
-                    paddle.add(
-                        x=paddle.matmul(
-                            x=step_input, y=weight_2) + paddle.matmul(
-                                x=(paddle.nn.functional.sigmoid(r) * pre_hidden),
-                                y=weight_3),
-                        y=bias_2))
+                    paddle.add(x=paddle.matmul(
+                        x=step_input, y=weight_2) + paddle.matmul(
+                            x=(paddle.nn.functional.sigmoid(r) * pre_hidden),
+                            y=weight_3),
+                               y=bias_2))
                 hidden_state = paddle.nn.functional.sigmoid(u) * pre_hidden + (
                     1.0 - paddle.nn.functional.sigmoid(u)) * hidden_c
                 hidden_array[k] = hidden_state
@@ -216,7 +209,8 @@ class PtbModel(paddle.fluid.Layer):
         projection = paddle.add(x=projection, y=self.softmax_bias)
         loss = paddle.nn.functional.softmax_with_cross_entropy(
             logits=projection, label=label, soft_label=False)
-        pre_2d = paddle.fluid.layers.reshape(projection, shape=[-1, self.vocab_size])
+        pre_2d = paddle.fluid.layers.reshape(
+            projection, shape=[-1, self.vocab_size])
         label_2d = paddle.fluid.layers.reshape(label, shape=[-1, 1])
         acc = paddle.metric.accuracy(input=pre_2d, label=label_2d, k=20)
         loss = paddle.fluid.layers.reshape(loss, shape=[-1, self.num_steps])
@@ -303,8 +297,8 @@ def train_ptb_lm():
     lr_arr = [base_learning_rate]
     for i in range(1, max_epoch):
         bd.append(total_batch_size * i)
-        new_lr = base_learning_rate * (lr_decay**
-                                       max(i + 1 - epoch_start_decay, 0.0))
+        new_lr = base_learning_rate * (lr_decay
+                                       **max(i + 1 - epoch_start_decay, 0.0))
         lr_arr.append(new_lr)
 
     grad_clip = paddle.nn.ClipGradByGlobalNorm(max_grad_norm)
@@ -329,14 +323,17 @@ def train_ptb_lm():
 
         model.eval()
         train_data_iter = reader.get_data_iter(data, batch_size, num_steps)
-        init_hidden = paddle.to_tensor(data=init_hidden_data, dtype=None, place=None, stop_gradient=True)
+        init_hidden = paddle.to_tensor(
+            data=init_hidden_data, dtype=None, place=None, stop_gradient=True)
         accum_num_recall = 0.0
         for batch_id, batch in enumerate(train_data_iter):
             x_data, y_data = batch
             x_data = x_data.reshape((-1, num_steps, 1))
             y_data = y_data.reshape((-1, num_steps, 1))
-            x = paddle.to_tensor(data=x_data, dtype=None, place=None, stop_gradient=True)
-            y = paddle.to_tensor(data=y_data, dtype=None, place=None, stop_gradient=True)
+            x = paddle.to_tensor(
+                data=x_data, dtype=None, place=None, stop_gradient=True)
+            y = paddle.to_tensor(
+                data=y_data, dtype=None, place=None, stop_gradient=True)
             dy_loss, last_hidden, acc = ptb_model(x, y, init_hidden)
 
             out_loss = dy_loss.numpy()
@@ -366,15 +363,18 @@ def train_ptb_lm():
 
         train_data_iter = reader.get_data_iter(train_data, batch_size,
                                                num_steps)
-        init_hidden = paddle.to_tensor(data=init_hidden_data, dtype=None, place=None, stop_gradient=True)
+        init_hidden = paddle.to_tensor(
+            data=init_hidden_data, dtype=None, place=None, stop_gradient=True)
 
         start_time = time.time()
         for batch_id, batch in enumerate(train_data_iter):
             x_data, y_data = batch
             x_data = x_data.reshape((-1, num_steps, 1))
             y_data = y_data.reshape((-1, num_steps, 1))
-            x = paddle.to_tensor(data=x_data, dtype=None, place=None, stop_gradient=True)
-            y = paddle.to_tensor(data=y_data, dtype=None, place=None, stop_gradient=True)
+            x = paddle.to_tensor(
+                data=x_data, dtype=None, place=None, stop_gradient=True)
+            y = paddle.to_tensor(
+                data=y_data, dtype=None, place=None, stop_gradient=True)
             dy_loss, last_hidden, acc = ptb_model(x, y, init_hidden)
 
             out_loss = dy_loss.numpy()
@@ -407,7 +407,7 @@ def train_ptb_lm():
         eval(ptb_model, test_data)
     paddle.enable_static()
 
-        #eval(ptb_model, test_data)
+    #eval(ptb_model, test_data)
 
 
 train_ptb_lm()
